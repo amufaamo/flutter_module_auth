@@ -1,0 +1,39 @@
+# パッケージの名前
+name: flutter_auth_ui
+
+# パッケージの簡単な説明。もう少し具体的に書くとGood！
+# 例: "A package providing a set of Flutter UIs for Firebase authentication."
+description: "A set of beautiful UIs for Firebase Authentication."
+
+# バージョン番号。最初のリリースなので 1.0.0 でも良いですね！
+version: 1.0.0
+
+# GitHubリポジトリのURLをここに書きましょう
+homepage: https://github.com/YOUR_USERNAME/flutter_auth_ui
+repository: https://github.com/YOUR_USERNAME/flutter_auth_ui
+
+environment:
+  sdk: '>=3.3.3 <4.0.0' # Flutter 3.19以降で推奨される書き方です
+  flutter: ">=1.17.0"
+
+# --- ⬇️ ここにパッケージの依存関係をまとめます ⬇️ ---
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # (flutter: の下にあったものを、ここに移動しました！)
+  cupertino_icons: ^1.0.8
+  firebase_core: ^2.30.0
+  firebase_auth: ^4.19.0
+  google_fonts: ^6.2.1
+  provider: ^6.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0 # バージョンを少し上げておくのがオススメです
+
+# flutter: セクションは、アセットやフォントの指定がない場合は空でもOKです。
+# 今回は uses-material-design が必要なので残しておきます。
+flutter:
+  uses-material-design: true
