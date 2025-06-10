@@ -1,3 +1,115 @@
+# 使い方
+1. flutter create 〇〇 であらたにプロジェクトを作る
+2. そのディレクトリの中にpackagesというディレクトリを作る
+3. packagesの中にこのflutter_module_authを入れる
+4. pubspec.ymlを以下のように編集
+flutter:
+  sdk: flutter
+
+flutter_auth_ui:
+  path: packages/flutter_auth_ui
+
+5. flutter pub add firebase_core firebase_auth
+6. flutterfire configure
+7. dartを以下のように書き換え
+```dart
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+// --- 1. exampleディレクトリに生成されたfirebase_options.dartをインポート ---
+import 'firebase_options.dart';
+
+// --- 2. 作成したパッケージをインポート ---
+import 'package:flutter_auth_ui/flutter_auth_ui.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // --- 3. exampleアプリとしてFirebaseを初期化 ---
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // --- 4. パッケージのテーマを使ってみる ---
+    return MaterialApp(
+      title: 'Flutter Auth UI Example',
+      theme: AppTheme.lightTheme, // パッケージから提供されたテーマ
+      darkTheme: AppTheme.darkTheme, // パッケージから提供されたテーマ
+      themeMode: ThemeMode.system, // ここはシンプルにsystem固定などでもOK
+      home: const AuthGate(),
+    );
+  }
+}
+
+// --- 5. 認証状態を監視して画面を振り分けるウィジェット ---
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // 接続待機中はインジケーターを表示
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        // ログインしている場合
+        if (snapshot.hasData) {
+          // ログイン後のホーム画面を表示（このHomeScreenはexample内に定義）
+          return const HomeScreen();
+        }
+
+        // ログインしていない場合
+        // --- 6. パッケージが提供するログイン画面を呼び出す！ ---
+        return const LoginScreen();
+      },
+    );
+  }
+}
+
+
+// --- 7. ログイン後の画面（exampleアプリ内に作るダミー画面） ---
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Home Screen'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+            },
+          ),
+        ],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Welcome!', style: TextStyle(fontSize: 24)),
+            const SizedBox(height: 16),
+            Text(user?.email ?? 'No email found'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
 # Flutter Auth UI
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
