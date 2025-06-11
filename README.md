@@ -3,6 +3,8 @@
 2. そのディレクトリの中にpackagesというディレクトリを作る
 3. packagesの中にこのflutter_module_authを入れる
 4. pubspec.ymlを以下のように編集
+
+
 flutter:
   sdk: flutter
 
