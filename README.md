@@ -7,7 +7,7 @@ flutter:
   sdk: flutter
 
 flutter_auth_ui:
-  path: packages/flutter_auth_ui
+  path: packages/flutter_module_auth
 
 5. flutter pub add firebase_core firebase_auth
 6. flutterfire configure
