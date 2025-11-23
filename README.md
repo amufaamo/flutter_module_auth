@@ -216,3 +216,19 @@ SOFTWARE.
 - Initial version of the package.
 - Provides LoginScreen, SignUpScreen, and ForgotPasswordScreen.
 ````
+
+Firebase Console: 「Authentication」>「Sign-in method」で Google を有効にする。
+
+Android:
+
+開発マシンの SHA-1フィンガープリント を取得し、Firebase Consoleのプロジェクト設定に追加する。（これがないとAndroidで100%エラーになります！）
+
+iOS:
+
+GoogleService-Info.plist をXcodeプロジェクトに追加。
+
+Info.plist に CFBundleURLTypes (URLスキーム) を設定。（Google認証後のリダイレクト用）
+
+これでGoogle認証の機能がパッケージに追加されました！ デザインも既存のテーマに合うように OutlinedButton などを使ってみましたが、いかがでしょうか？
+
+もし、「AndroidのSHA-1の設定方法が詳しく知りたい」とか「iOSの設定も見てほしい」などあれば、遠慮なく聞いてくださいね。お手伝いします！

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart'; // ⬅️ 追加: Google Sign-In用パッケージ
 
 // この画面から遷移する他の画面をインポートします
 import 'forgot_password_screen.dart';
@@ -21,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String _errorMessage = '';
   bool _isLoading = false;
 
+  // --- 既存のメールアドレスログイン ---
   Future<void> _login() async {
     try {
       setState(() {
@@ -36,7 +38,54 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = e.message ?? "An error occurred"; // Simplified error message
+        _errorMessage = e.message ?? "An error occurred";
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'An unexpected error occurred: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  // --- 🆕 追加: Googleログインのロジック ---
+  Future<void> _signInWithGoogle() async {
+    try {
+      setState(() {
+        _errorMessage = '';
+        _isLoading = true;
+      });
+
+      // 1. Googleログインフローを開始
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      if (googleUser == null) {
+        // ユーザーがキャンセルした場合
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // 2. 認証情報を取得
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      // 3. Firebase用の認証クレデンシャルを作成
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // 4. Firebaseにサインイン
+      await _auth.signInWithCredential(credential);
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.message ?? "Google Sign-In failed";
         _isLoading = false;
       });
     } catch (e) {
@@ -64,21 +113,31 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    Text('Log in', style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
+                    Text(
+                      'Log in',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 24),
                     TextField(
                       controller: _emailController,
-                      decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined)),
+                      decoration: const InputDecoration(
+                        labelText: 'Email Address',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
                       keyboardType: TextInputType.emailAddress,
                       enabled: !_isLoading,
                     ),
                     const SizedBox(height: 16),
-                                    Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         TextField(
                           controller: _passwordController,
-                          decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
+                          decoration: const InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: Icon(Icons.lock_outline),
+                          ),
                           obscureText: true,
                           enabled: !_isLoading,
                         ),
@@ -96,7 +155,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 : () {
                                     Navigator.push(
                                       context,
-                                      MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const ForgotPasswordScreen(),
+                                      ),
                                     );
                                   },
                             child: const Text('Forgot Password?'),
@@ -109,14 +171,57 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (_errorMessage.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Text(_errorMessage, style: TextStyle(color: Theme.of(context).colorScheme.error), textAlign: TextAlign.center),
+                        child: Text(
+                          _errorMessage,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
+
+                    // --- メールアドレスでのログインボタン ---
                     _isLoading
                         ? const Center(child: CircularProgressIndicator())
-                        : ElevatedButton(onPressed: _login, child: const Text('Log In')),
+                        : ElevatedButton(
+                            onPressed: _login,
+                            child: const Text('Log In'),
+                          ),
+
+                    // --- 🆕 追加: Googleログイン用のUI ---
+                    const SizedBox(height: 24),
+                    Row(
+                      children: const [
+                        Expanded(child: Divider()),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child:
+                              Text("OR", style: TextStyle(color: Colors.grey)),
+                        ),
+                        Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _signInWithGoogle,
+                      // アイコンは標準のloginアイコンにしていますが、
+                      // アセット画像があれば Image.asset(...) に差し替えるとより本格的です！
+                      icon: const Icon(Icons.login),
+                      label: const Text('Sign in with Google'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                    // ----------------------------------------
+
                     const SizedBox(height: 16),
                     TextButton(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SignUpScreen())),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SignUpScreen(),
+                        ),
+                      ),
                       child: const Text('Create New Account'),
                     ),
                   ],
