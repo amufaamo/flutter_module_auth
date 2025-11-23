@@ -1,10 +1,10 @@
 // lib/src/screens/login_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // ⬅️ Web判定(kIsWeb)のために追加
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart'; // ⬅️ 追加: Google Sign-In用パッケージ
+import 'package:google_sign_in/google_sign_in.dart';
 
-// この画面から遷移する他の画面をインポートします
 import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
 
@@ -22,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String _errorMessage = '';
   bool _isLoading = false;
 
-  // --- 既存のメールアドレスログイン ---
+  // --- メールアドレスでのログイン ---
   Future<void> _login() async {
     try {
       setState(() {
@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // --- 🆕 追加: Googleログインのロジック ---
+  // --- 🆕 Googleログイン（Web対応・修正版） ---
   Future<void> _signInWithGoogle() async {
     try {
       setState(() {
@@ -58,27 +58,44 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = true;
       });
 
-      // 1. Googleログインフローを開始
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (kIsWeb) {
+        // 🌐【Webの場合】
+        // ポップアップブロックやdeprecatedエラーを回避するため、
+        // google_sign_in パッケージではなく、Firebase標準のポップアップを使います。
+        GoogleAuthProvider authProvider = GoogleAuthProvider();
 
-      if (googleUser == null) {
-        // ユーザーがキャンセルした場合
-        setState(() => _isLoading = false);
-        return;
+        // 必要に応じてログインのヒントなどを設定できます
+        authProvider.setCustomParameters({'login_hint': 'user@example.com'});
+
+        await _auth.signInWithPopup(authProvider);
+      } else {
+        // 📱【スマホアプリの場合】
+        // Android/iOSは従来通り GoogleSignIn パッケージを使います。
+        // クライアントIDは google-services.json / GoogleService-Info.plist から
+        // 自動的に読み込まれるため、ここに書かなくても大丈夫です。
+        final GoogleSignIn googleSignIn = GoogleSignIn();
+
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+        if (googleUser == null) {
+          // キャンセルされた場合
+          setState(() => _isLoading = false);
+          return;
+        }
+
+        // 認証情報を取得
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+
+        // Firebase用クレデンシャル作成
+        final OAuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: null,
+          idToken: googleAuth.idToken,
+        );
+
+        // Firebaseにサインイン
+        await _auth.signInWithCredential(credential);
       }
-
-      // 2. 認証情報を取得
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      // 3. Firebase用の認証クレデンシャルを作成
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // 4. Firebaseにサインイン
-      await _auth.signInWithCredential(credential);
 
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -100,7 +117,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-//      appBar: AppBar(title: const Text('Log In')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -119,6 +135,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
+
+                    // --- Email Form ---
                     TextField(
                       controller: _emailController,
                       decoration: const InputDecoration(
@@ -145,7 +163,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.only(top: 8.0),
                           child: TextButton(
                             style: TextButton.styleFrom(
-                              // タップ範囲を小さくするためのスタイル
                               padding: EdgeInsets.zero,
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -166,8 +183,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
-                    // "Forgot Password?" TextButton can be added here if needed
                     const SizedBox(height: 24),
+
+                    // --- Error Message ---
                     if (_errorMessage.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
@@ -180,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
 
-                    // --- メールアドレスでのログインボタン ---
+                    // --- Login Button ---
                     _isLoading
                         ? const Center(child: CircularProgressIndicator())
                         : ElevatedButton(
@@ -188,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: const Text('Log In'),
                           ),
 
-                    // --- 🆕 追加: Googleログイン用のUI ---
+                    // --- Google Login ---
                     const SizedBox(height: 24),
                     Row(
                       children: const [
@@ -204,16 +222,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 24),
                     OutlinedButton.icon(
                       onPressed: _isLoading ? null : _signInWithGoogle,
-                      // アイコンは標準のloginアイコンにしていますが、
-                      // アセット画像があれば Image.asset(...) に差し替えるとより本格的です！
                       icon: const Icon(Icons.login),
                       label: const Text('Sign in with Google'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
-                    // ----------------------------------------
 
+                    // --- Sign Up Link ---
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => Navigator.push(
