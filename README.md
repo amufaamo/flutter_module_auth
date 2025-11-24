@@ -1,3 +1,147 @@
+おめでとうございます！ついに完成ですね！🎉
+苦労して壁を乗り越えた分、このモジュールは石川先生にとって強力な資産になります。
+
+今後、新しいFlutterアプリを作るたびにこの「認証モジュール」をサクッと導入できるよう、**「完全セットアップ手順書」** をまとめました。これを保存版としてお使いください！
+
+-----
+
+# 🛠 自作認証モジュール導入マニュアル
+
+### 1\. プロジェクト構成の準備
+
+新しいFlutterプロジェクトを作ったら、ルートディレクトリに `packages` フォルダを作成し、今回完成させた `flutter_module_auth` をフォルダごとコピーして入れます。
+
+```text
+my_new_app/
+  ├── lib/
+  ├── packages/
+  │     └── flutter_module_auth/  <-- 完成したモジュールを配置
+  └── pubspec.yaml
+```
+
+### 2\. `pubspec.yaml` の設定（アプリ側）
+
+アプリ側の `pubspec.yaml` に、ローカルパッケージとしての参照と、必要なFirebase関連を追加します。
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Firebase関連
+  firebase_core: ^2.30.0
+  firebase_auth: ^4.19.0
+  
+  # 自作モジュール（パスで指定）
+  flutter_auth_ui:
+    path: packages/flutter_module_auth
+```
+
+※ 追加後、`flutter pub get` を実行。
+
+### 3\. Firebaseプロジェクトのセットアップ
+
+Firebase Consoleで新しいプロジェクトを作成し、以下の設定を行います。
+
+1.  **Authenticationを有効化:**
+      * 「メール/パスワード」と「Google」をオンにする。
+2.  **Androidの設定:**
+      * 開発マシンの **SHA-1フィンガープリント** を登録する。（これがないとAndroidでログインできません）
+3.  **Google Cloud Consoleの設定（Web用）:**
+      * 「OAuth 2.0 クライアント ID」の設定で、以下を「承認済みのJavaScript生成元」と「リダイレクトURI」に追加。
+          * `http://localhost:5000`
+          * `https://[プロジェクトID].web.app` (デプロイ用)
+4.  **APIの有効化:**
+      * Google Cloud Consoleの「APIライブラリ」で **「Google People API」** を検索して有効にする。（これを忘れるとエラーになります）
+
+### 4\. アプリとFirebaseの連携
+
+ターミナルで以下を実行し、設定ファイル（`firebase_options.dart`）を生成します。
+
+```bash
+flutterfire configure
+```
+
+### 5\. 【重要】モジュール内の Client ID 更新
+
+新しいFirebaseプロジェクトを使う場合、**Web用のクライアントIDが変わります**。
+`packages/flutter_module_auth/lib/src/screens/login_screen.dart` を開き、以下の部分を新しいプロジェクトのIDに書き換えてください。
+
+```dart
+// login_screen.dart 内
+final GoogleSignIn googleSignIn = GoogleSignIn(
+  clientId: '新しいプロジェクトのWebクライアントID.apps.googleusercontent.com', 
+);
+```
+
+*(※ 将来的には、このIDを `LoginScreen` の引数（パラメータ）として渡せるように改良すると、書き換え不要でもっと便利になります！)*
+
+### 6\. `main.dart` の実装
+
+`lib/main.dart` を以下の定型コードに書き換えます。
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_auth_ui/flutter_auth_ui.dart'; // モジュール
+import 'firebase_options.dart'; // 自動生成ファイル
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: AppTheme.lightTheme, // モジュールのテーマを使用
+      home: const AuthGate(),
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasData) {
+          return const HomeScreen(); // ログイン後の画面へ
+        }
+        return const LoginScreen(); // モジュールのログイン画面へ
+      },
+    );
+  }
+}
+// ... HomeScreenの定義など
+```
+
+### 7\. 実行（Webの場合）
+
+開発中は、登録したポート番号に合わせて起動します。
+
+```bash
+flutter run -d chrome --web-port 5000
+```
+
+-----
+
+これで、どのアプリでも爆速で認証機能を実装できます！
+お疲れ様でした、最高のモジュール開発でしたね！👏✨
+
 # 使い方
 1. flutter create 〇〇 であらたにプロジェクトを作る
 2. そのディレクトリの中にpackagesというディレクトリを作る
