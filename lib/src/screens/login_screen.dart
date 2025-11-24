@@ -3,10 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // ⬅️ Web判定(kIsWeb)のために追加
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+// import 'package:google_sign_in/google_sign_in.dart';
 
-import 'forgot_password_screen.dart';
-import 'signup_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,23 +17,54 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+
   String _errorMessage = '';
   bool _isLoading = false;
+  bool _isEmailSent = false;
 
-  // --- メールアドレスでのログイン ---
-  Future<void> _login() async {
+  // --- メールリンクでのログイン（送信） ---
+  Future<void> _sendLoginLink() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter your email address.';
+      });
+      return;
+    }
+
     try {
       setState(() {
         _errorMessage = '';
         _isLoading = true;
       });
-      await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+
+      // ActionCodeSettingsの設定
+      // Webのみの運用の場合は、Android/iOSの設定を外すことでFDL(Firebase Dynamic Links)のエラーを回避できる場合があります。
+      var acs = ActionCodeSettings(
+        // URL: 認証完了後に開くURL。HostingのURLに合わせます。
+        url: 'https://authentication-61d1a.web.app/finishSignUp',
+        handleCodeInApp: true,
+        // Webのみの場合は以下をコメントアウトまたは削除
+        // iOSBundleId: 'com.example.testAuthApp',
+        // androidPackageName: 'com.example.test_auth_app',
+        // androidInstallApp: true,
+        // androidMinimumVersion: '12',
       );
+
+      await _auth.sendSignInLinkToEmail(
+        email: email,
+        actionCodeSettings: acs,
+      );
+
+      // メールアドレスをローカルに保存（リンク踏んだ時に使う）
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('email', email);
+
       if (!mounted) return;
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _isEmailSent = true;
+      });
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -73,28 +103,28 @@ class _LoginScreenState extends State<LoginScreen> {
         // Android/iOSは従来通り GoogleSignIn パッケージを使います。
         // クライアントIDは google-services.json / GoogleService-Info.plist から
         // 自動的に読み込まれるため、ここに書かなくても大丈夫です。
-        final GoogleSignIn googleSignIn = GoogleSignIn();
+        // final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email']);
+        // final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        throw UnimplementedError('Google Sign In temporarily disabled');
 
-        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        // if (googleUser == null) {
+        //   // キャンセルされた場合
+        //   setState(() => _isLoading = false);
+        //   return;
+        // }
 
-        if (googleUser == null) {
-          // キャンセルされた場合
-          setState(() => _isLoading = false);
-          return;
-        }
+        // // 認証情報を取得
+        // final GoogleSignInAuthentication googleAuth =
+        //     await googleUser.authentication;
 
-        // 認証情報を取得
-        final GoogleSignInAuthentication googleAuth =
-            await googleUser.authentication;
+        // // Firebase用クレデンシャル作成
+        // final OAuthCredential credential = GoogleAuthProvider.credential(
+        //   accessToken: null,
+        //   idToken: googleAuth.idToken,
+        // );
 
-        // Firebase用クレデンシャル作成
-        final OAuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: null,
-          idToken: googleAuth.idToken,
-        );
-
-        // Firebaseにサインイン
-        await _auth.signInWithCredential(credential);
+        // // Firebaseにサインイン
+        // await _auth.signInWithCredential(credential);
       }
 
       if (!mounted) return;
@@ -136,75 +166,64 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // --- Email Form ---
-                    TextField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Email Address',
-                        prefixIcon: Icon(Icons.email_outlined),
+                    if (_isEmailSent) ...[
+                      const Icon(Icons.mark_email_read,
+                          size: 64, color: Colors.green),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Login link sent!',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
                       ),
-                      keyboardType: TextInputType.emailAddress,
-                      enabled: !_isLoading,
-                    ),
-                    const SizedBox(height: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        TextField(
-                          controller: _passwordController,
-                          decoration: const InputDecoration(
-                            labelText: 'Password',
-                            prefixIcon: Icon(Icons.lock_outline),
-                          ),
-                          obscureText: true,
-                          enabled: !_isLoading,
+                      const SizedBox(height: 8),
+                      Text(
+                        'Check your email (${_emailController.text}) and click the link to sign in.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      OutlinedButton(
+                        onPressed: () {
+                          setState(() {
+                            _isEmailSent = false;
+                          });
+                        },
+                        child: const Text('Back to Login'),
+                      ),
+                    ] else ...[
+                      // --- Email Form ---
+                      TextField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          labelText: 'Email Address',
+                          prefixIcon: Icon(Icons.email_outlined),
                         ),
+                        keyboardType: TextInputType.emailAddress,
+                        enabled: !_isLoading,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // --- Error Message ---
+                      if (_errorMessage.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: TextButton(
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: const EdgeInsets.only(bottom: 16.0),
+                          child: Text(
+                            _errorMessage,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
                             ),
-                            onPressed: _isLoading
-                                ? null
-                                : () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const ForgotPasswordScreen(),
-                                      ),
-                                    );
-                                  },
-                            child: const Text('Forgot Password?'),
+                            textAlign: TextAlign.center,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
 
-                    // --- Error Message ---
-                    if (_errorMessage.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Text(
-                          _errorMessage,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-
-                    // --- Login Button ---
-                    _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : ElevatedButton(
-                            onPressed: _login,
-                            child: const Text('Log In'),
-                          ),
+                      // --- Send Link Button ---
+                      _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : ElevatedButton(
+                              onPressed: _sendLoginLink,
+                              child: const Text('Send Login Link'),
+                            ),
+                    ],
 
                     // --- Google Login ---
                     const SizedBox(height: 24),
@@ -228,18 +247,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
-
-                    // --- Sign Up Link ---
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SignUpScreen(),
-                        ),
-                      ),
-                      child: const Text('Create New Account'),
-                    ),
                   ],
                 ),
               ),
@@ -253,7 +260,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _emailController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 }
