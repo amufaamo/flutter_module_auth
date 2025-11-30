@@ -174,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style:
                           Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                color: Colors.white,
                               ),
                       textAlign: TextAlign.center,
                     ),
@@ -182,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'Welcome back!',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey.shade600,
+                            color: Colors.grey.shade300,
                           ),
                       textAlign: TextAlign.center,
                     ),
@@ -211,7 +211,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             _isEmailSent = false;
                           });
                         },
-                        child: const Text('Back to Login'),
+                        child: const Text('Back to Login',
+                            style: TextStyle(color: Colors.white)),
                       ),
                     ] else ...[
                       // --- Email Form ---
@@ -224,8 +225,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           return TextField(
                             controller: _emailController,
                             decoration: InputDecoration(
-                              labelText: 'Email Address',
-                              prefixIcon: const Icon(Icons.email_outlined),
+                              labelStyle:
+                                  TextStyle(color: Colors.grey.shade400),
+                              hintStyle: TextStyle(color: Colors.grey.shade400),
+                              prefixIcon: const Icon(Icons.email_outlined,
+                                  color: Colors.white70),
                               suffixIcon: isEmailValid
                                   ? const Icon(Icons.check_circle,
                                       color: Colors.teal)
@@ -241,11 +245,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide:
-                                    BorderSide(color: Colors.grey.shade300),
+                                    BorderSide(color: Colors.grey.shade600),
                               ),
                               filled: true,
-                              fillColor: Colors.grey.shade50,
+                              fillColor: const Color(0xFF2C2C2C),
                             ),
+                            style: const TextStyle(color: Colors.white),
                             keyboardType: TextInputType.emailAddress,
                             enabled: !_isLoading,
                           );
@@ -324,17 +329,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         'https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg',
                         height: 24,
                         width: 24,
+                        color: Colors.white, // Tint icon white
                         errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.login), // Fallback
+                            const Icon(Icons.login,
+                                color: Colors.white), // Fallback
                       ),
                       label: const Text('Sign in with Google'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: BorderSide(color: Colors.grey.shade300),
+                        side: BorderSide(color: Colors.grey.shade600),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        foregroundColor: Colors.black87,
+                        foregroundColor: Colors.white,
                       ),
                     ),
                   ],
