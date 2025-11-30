@@ -146,8 +146,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 🎨 Mint Green / Teal Color for the primary action
-    final primaryColor = const Color(0xFF4DB6AC); // Teal 300 equivalent
+    // 🎨 Use Theme Primary Color
+    final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
       body: Center(
@@ -170,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: <Widget>[
                     // 3. 新規登録への導線 (Title Update)
                     Text(
-                      'Log in or Sign up',
+                      'Get Started',
                       style:
                           Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -189,8 +189,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 32),
 
                     if (_isEmailSent) ...[
-                      const Icon(Icons.mark_email_read,
-                          size: 64, color: Colors.teal),
+                      Icon(Icons.mark_email_read,
+                          size: 64, color: primaryColor),
                       const SizedBox(height: 16),
                       const Text(
                         'Login link sent!',
@@ -231,8 +231,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               prefixIcon: const Icon(Icons.email_outlined,
                                   color: Colors.white70),
                               suffixIcon: isEmailValid
-                                  ? const Icon(Icons.check_circle,
-                                      color: Colors.teal)
+                                  ? Icon(Icons.check_circle,
+                                      color: primaryColor)
                                   : null,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
