@@ -146,6 +146,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 🎨 Mint Green / Teal Color for the primary action
+    final primaryColor = const Color(0xFF4DB6AC); // Teal 300 equivalent
+
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
@@ -153,22 +156,41 @@ class _LoginScreenState extends State<LoginScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: Card(
+              elevation:
+                  0, // Flat modern look? Or keep default. Let's keep default but maybe softer.
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.grey.shade200),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(32.0), // More breathing room
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
+                    // 3. 新規登録への導線 (Title Update)
                     Text(
-                      'Log in',
-                      style: Theme.of(context).textTheme.headlineSmall,
+                      'Log in or Sign up',
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Welcome back!',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey.shade600,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
 
                     if (_isEmailSent) ...[
                       const Icon(Icons.mark_email_read,
-                          size: 64, color: Colors.green),
+                          size: 64, color: Colors.teal),
                       const SizedBox(height: 16),
                       const Text(
                         'Login link sent!',
@@ -180,6 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'Check your email (${_emailController.text}) and click the link to sign in.',
                         textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade700),
                       ),
                       const SizedBox(height: 24),
                       OutlinedButton(
@@ -192,15 +215,53 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ] else ...[
                       // --- Email Form ---
-                      TextField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email Address',
-                          prefixIcon: Icon(Icons.email_outlined),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        enabled: !_isLoading,
+                      // 4. 入力フィールドのインタラクション (Focus & Validation)
+                      ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _emailController,
+                        builder: (context, value, child) {
+                          final isEmailValid = value.text.contains('@') &&
+                              value.text.contains('.');
+                          return TextField(
+                            controller: _emailController,
+                            decoration: InputDecoration(
+                              labelText: 'Email Address',
+                              prefixIcon: const Icon(Icons.email_outlined),
+                              suffixIcon: isEmailValid
+                                  ? const Icon(Icons.check_circle,
+                                      color: Colors.teal)
+                                  : null,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: primaryColor, width: 2),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            keyboardType: TextInputType.emailAddress,
+                            enabled: !_isLoading,
+                          );
+                        },
                       ),
+
+                      // 2. 「マジックリンク」であることの補足
+                      const SizedBox(height: 8),
+                      Text(
+                        'No password required. We will send you a login link.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                        textAlign: TextAlign.left,
+                      ),
+
                       const SizedBox(height: 24),
 
                       // --- Error Message ---
@@ -217,34 +278,63 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
 
                       // --- Send Link Button ---
+                      // 1. ボタンの階層構造（ヒエラルキー）の明確化
                       _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : ElevatedButton(
                               onPressed: _sendLoginLink,
-                              child: const Text('Send Login Link'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryColor,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                'Send Login Link',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                     ],
 
                     // --- Google Login ---
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     Row(
-                      children: const [
-                        Expanded(child: Divider()),
+                      children: [
+                        Expanded(child: Divider(color: Colors.grey.shade300)),
                         Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child:
-                              Text("OR", style: TextStyle(color: Colors.grey)),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text("OR",
+                              style: TextStyle(
+                                  color: Colors.grey.shade500, fontSize: 12)),
                         ),
-                        Expanded(child: Divider()),
+                        Expanded(child: Divider(color: Colors.grey.shade300)),
                       ],
                     ),
                     const SizedBox(height: 24),
                     OutlinedButton.icon(
                       onPressed: _isLoading ? null : _signInWithGoogle,
-                      icon: const Icon(Icons.login),
+                      icon: Image.network(
+                        'https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg',
+                        height: 24,
+                        width: 24,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.login), // Fallback
+                      ),
                       label: const Text('Sign in with Google'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        foregroundColor: Colors.black87,
                       ),
                     ),
                   ],
