@@ -8,7 +8,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final String emailLinkUrl;
+
+  const LoginScreen({
+    super.key,
+    required this.emailLinkUrl,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -42,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Webのみの運用の場合は、Android/iOSの設定を外すことでFDL(Firebase Dynamic Links)のエラーを回避できる場合があります。
       var acs = ActionCodeSettings(
         // URL: 認証完了後に開くURL。HostingのURLに合わせます。
-        url: 'https://authentication-61d1a.web.app/finishSignUp',
+        url: widget.emailLinkUrl,
         handleCodeInApp: true,
         // Webのみの場合は以下をコメントアウトまたは削除
         // iOSBundleId: 'com.example.testAuthApp',

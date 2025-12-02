@@ -23,8 +23,8 @@ dependencies:
 
   # (flutter: の下にあったものを、ここに移動しました！)
   cupertino_icons: ^1.0.8
-  firebase_core: ^2.30.0
-  firebase_auth: ^4.19.0
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
   google_fonts: ^6.2.1
   provider: ^6.1.5
   google_sign_in: ^7.2.0
