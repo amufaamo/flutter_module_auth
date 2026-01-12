@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // ⬅️ Web判定(kIsWeb)のために追加
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 // import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -153,75 +154,155 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     // 🎨 Use Theme Primary Color
     final primaryColor = Theme.of(context).primaryColor;
+    final backgroundColor =
+        const Color(0xFF1E1E1E); // Slightly lighter dark background for card
+    final inputFillColor = const Color(0xFF2C2C2C);
 
     return Scaffold(
+      backgroundColor: Colors.black, // Dark background for the whole page
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
+            constraints: const BoxConstraints(maxWidth: 420), // Slightly wider
             child: Card(
-              elevation:
-                  0, // Flat modern look? Or keep default. Let's keep default but maybe softer.
+              elevation: 8, // Add some shadow for depth
+              shadowColor: Colors.black54,
+              color: backgroundColor,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(24), // More rounded
+                side: BorderSide(color: Colors.white.withOpacity(0.1)),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(32.0), // More breathing room
+                padding: const EdgeInsets.symmetric(
+                    vertical: 40.0, horizontal: 32.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    // 3. 新規登録への導線 (Title Update)
+                    // 3. Title Update
                     Text(
                       'Get Started',
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                      style: GoogleFonts.notoSans(
+                        fontSize: 32, // Larger font
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 40), // More space
+
+                    // --- Google Login (Moved to Top) ---
+                    _isLoading
+                        ? const SizedBox
+                            .shrink() // Hide if loading (optional, or disable)
+                        : OutlinedButton(
+                            onPressed: _isLoading ? null : _signInWithGoogle,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: Colors
+                                  .white, // White background for Google button
+                              side: BorderSide.none,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
                               ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Welcome back!',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey.shade300,
+                              foregroundColor: Colors.black, // Text color black
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.network(
+                                  'https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg',
+                                  height: 24,
+                                  width: 24,
+                                  // No color filter to show original Google colors
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.login,
+                                          color: Colors.blue),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Sign in with Google',
+                                  style: GoogleFonts.notoSans(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
+
+                    if (!_isLoading) ...[
+                      const SizedBox(height: 32),
+                      Row(
+                        children: [
+                          Expanded(child: Divider(color: Colors.grey.shade700)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              "OR",
+                              style: GoogleFonts.notoSans(
+                                color: Colors.grey.shade400,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Expanded(child: Divider(color: Colors.grey.shade700)),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                    ],
 
                     if (_isEmailSent) ...[
                       Icon(Icons.mark_email_read,
-                          size: 64, color: primaryColor),
-                      const SizedBox(height: 16),
-                      const Text(
+                          size: 72, color: primaryColor), // Larger icon
+                      const SizedBox(height: 24),
+                      Text(
                         'Login link sent!',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.notoSans(
+                          fontSize: 24, // Larger
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Text(
                         'Check your email (${_emailController.text}) and click the link to sign in.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey.shade700),
+                        style: GoogleFonts.notoSans(
+                          color: Colors.grey.shade400,
+                          fontSize: 16,
+                          height: 1.5,
+                        ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
                       OutlinedButton(
                         onPressed: () {
                           setState(() {
                             _isEmailSent = false;
                           });
                         },
-                        child: const Text('Back to Login',
-                            style: TextStyle(color: Colors.white)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: BorderSide(color: Colors.grey.shade600),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'Back to Login',
+                          style: GoogleFonts.notoSans(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ] else ...[
                       // --- Email Form ---
-                      // 4. 入力フィールドのインタラクション (Focus & Validation)
                       ValueListenableBuilder<TextEditingValue>(
                         valueListenable: _emailController,
                         builder: (context, value, child) {
@@ -230,9 +311,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           return TextField(
                             controller: _emailController,
                             decoration: InputDecoration(
-                              labelStyle:
-                                  TextStyle(color: Colors.grey.shade400),
-                              hintStyle: TextStyle(color: Colors.grey.shade400),
+                              labelText: 'Email Address',
+                              labelStyle: GoogleFonts.notoSans(
+                                  color: Colors.grey.shade400),
+                              hintText: 'name@example.com',
+                              hintStyle: GoogleFonts.notoSans(
+                                  color: Colors.grey.shade600),
                               prefixIcon: const Icon(Icons.email_outlined,
                                   color: Colors.white70),
                               suffixIcon: isEmailValid
@@ -240,55 +324,61 @@ class _LoginScreenState extends State<LoginScreen> {
                                       color: primaryColor)
                                   : null,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                    color: Colors.white.withOpacity(0.1)),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(16),
                                 borderSide:
                                     BorderSide(color: primaryColor, width: 2),
                               ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide:
-                                    BorderSide(color: Colors.grey.shade600),
-                              ),
                               filled: true,
-                              fillColor: const Color(0xFF2C2C2C),
+                              fillColor: inputFillColor,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 20, horizontal: 20),
                             ),
-                            style: const TextStyle(color: Colors.white),
+                            style: GoogleFonts.notoSans(
+                              color: Colors.white,
+                              fontSize: 18, // Larger input text
+                            ),
                             keyboardType: TextInputType.emailAddress,
                             enabled: !_isLoading,
                           );
                         },
                       ),
 
-                      // 2. 「マジックリンク」であることの補足
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Text(
                         'No password required. We will send you a login link.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
+                        style: GoogleFonts.notoSans(
+                          color: Colors.grey.shade500,
+                          fontSize: 14,
+                        ),
                         textAlign: TextAlign.left,
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
 
                       // --- Error Message ---
                       if (_errorMessage.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 16.0),
+                          padding: const EdgeInsets.only(bottom: 24.0),
                           child: Text(
                             _errorMessage,
-                            style: TextStyle(
+                            style: GoogleFonts.notoSans(
                               color: Theme.of(context).colorScheme.error,
+                              fontSize: 14,
                             ),
                             textAlign: TextAlign.center,
                           ),
                         ),
 
                       // --- Send Link Button ---
-                      // 1. ボタンの階層構造（ヒエラルキー）の明確化
                       _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : ElevatedButton(
@@ -296,59 +386,23 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: primaryColor,
                                 foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 20), // Taller button
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                                 elevation: 0,
+                                shadowColor: Colors.transparent,
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Send Login Link',
-                                style: TextStyle(
-                                  fontSize: 16,
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
                     ],
-
-                    // --- Google Login ---
-                    const SizedBox(height: 32),
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: Colors.grey.shade300)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text("OR",
-                              style: TextStyle(
-                                  color: Colors.grey.shade500, fontSize: 12)),
-                        ),
-                        Expanded(child: Divider(color: Colors.grey.shade300)),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    OutlinedButton.icon(
-                      onPressed: _isLoading ? null : _signInWithGoogle,
-                      icon: Image.network(
-                        'https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg',
-                        height: 24,
-                        width: 24,
-                        color: Colors.white, // Tint icon white
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.login,
-                                color: Colors.white), // Fallback
-                      ),
-                      label: const Text('Sign in with Google'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: BorderSide(color: Colors.grey.shade600),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
                   ],
                 ),
               ),
